@@ -41,6 +41,7 @@ jobs:
       with:
         repository: pimoroni/pimoroni-pico
         path: pimoroni-pico
+        submodules: true
 
     # Checkout the Pico SDK
     - name: Checkout Pico SDK
