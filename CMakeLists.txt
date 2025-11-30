@@ -17,6 +17,9 @@ pico_sdk_init()
 # Add your source files
 add_executable(${NAME}
     main.cpp # <-- Add source files here!
+    jimney.cpp
+    inclinometer.cpp
+    environment.cpp
 )
 
 # Include required libraries
