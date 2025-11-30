@@ -30,10 +30,22 @@ include(libraries/pico_graphics/pico_graphics)
 include(drivers/st7789/st7789)
 include(drivers/rgbled/rgbled)
 include(drivers/bme68x/bme68x)
+include(drivers/button/button)
 
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
-    pico_stdlib hardware_spi hardware_pwm hardware_dma rgbled pico_graphics st7789 pico_multicore hardware_i2c pimoroni_i2c bme68x
+    pico_stdlib 
+    hardware_spi 
+    hardware_pwm 
+    hardware_dma 
+    rgbled 
+    pico_graphics 
+    st7789 
+    pico_multicore 
+    hardware_i2c 
+    pimoroni_i2c 
+    bme68x 
+    button
 )
 
 # create map/bin/hex file etc.

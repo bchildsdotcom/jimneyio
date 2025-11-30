@@ -4,8 +4,13 @@
 
 using namespace pimoroni;
 
-const uint16_t HEIGHT = 240;
-const uint16_t WIDTH = 240;
+static const int WIDTH = 240;
+static const int HEIGHT = 240;
+
+static const uint A = 12;
+static const uint B = 13;
+static const uint X = 14;
+static const uint Y = 15;
 
 struct Pens {
   Pen BLACK;
