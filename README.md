@@ -1,4 +1,4 @@
-# Pico C++ Boilerplate Project <!-- omit in toc -->
+# Pico C++ Jimney IO Project <!-- omit in toc -->
 
 This project is intended as a starting point for working with the Pico SDK and Pimoroni Libraries in C++.
 
