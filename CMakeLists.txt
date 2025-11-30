@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Change your executable name to something creative!
-set(NAME pico-boilerplate) # <-- Name your project/executable here!
+set(NAME jimneyio) # <-- Name your project/executable here!
 
 include(pico_sdk_import.cmake)
 include(pimoroni_pico_import.cmake)
@@ -23,14 +23,14 @@ add_executable(${NAME}
 # This assumes `pimoroni-pico` is stored alongside your project
 include(common/pimoroni_i2c)
 include(common/pimoroni_bus)
-include(libraries/bitmap_fonts/bitmap_fonts)
-include(libraries/hershey_fonts/hershey_fonts)
-include(libraries/pico_explorer/pico_explorer)
+include(libraries/pico_graphics/pico_graphics)
+include(drivers/st7789/st7789)
+include(drivers/rgbled/rgbled)
+include(drivers/bme68x/bme68x)
 
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
-    pimoroni_i2c
-    pico_explorer # <-- List libraries here!
+    pico_stdlib hardware_spi hardware_pwm hardware_dma rgbled pico_graphics st7789 pico_multicore hardware_i2c pimoroni_i2c bme68x
 )
 
 # create map/bin/hex file etc.

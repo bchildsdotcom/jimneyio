@@ -45,13 +45,14 @@ export PICO_SDK_PATH="/path/to/pico-sdk"
 
 ```
 git clone https://github.com/pimoroni/pimoroni-pico
+git submodule update --init
 ```
 
-## Clone this boilerplate
+## Clone this project
 
 ```
-git clone https://github.com/pimoroni/pico-boilerplate
-cd pico-boilerplate
+git clone https://github.com/bchildsdotcom/jimneyio
+cd jimneyio
 ```
 
 If you have not or don't want to set `PICO_SDK_PATH` you can edit `.vscode/settings.json` to pass the path directly to CMake.
