@@ -20,6 +20,7 @@ add_executable(${NAME}
     jimney.cpp
     inclinometer.cpp
     environment.cpp
+    state.cpp
 )
 
 # Include required libraries
