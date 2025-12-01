@@ -42,13 +42,13 @@ struct Line {
   Line(Point p1, Point p2) : p1(p1), p2(p2) {}
 };
 
-enum STATES {
+enum STATE {
   SPLASH = 0,
   ENVIRONMENT = 1,
   INCLINOMETER = 2,
 };
 
-enum UNITS {
+enum UNIT {
   CELSIUS = 0,
-  FARENHEIT = 1
+  FAHRENHEIT = 1
 };

@@ -107,7 +107,8 @@ void renderStats(PicoGraphics& graphics, Pens& pens) {
   graphics.text(stringBuffer, text_location, WIDTH, 2);
 }
 
-uint8_t state = SPLASH;
+STATE state = SPLASH;
+UNIT units = CELSIUS;
 bool statsEnabled = false;
 
 void renderFrame(PicoGraphics& graphics, Pens& pens) {
@@ -119,7 +120,7 @@ void renderFrame(PicoGraphics& graphics, Pens& pens) {
         break;
 
       case ENVIRONMENT:
-        renderEnvironmentFrame(graphics, pens);
+        renderEnvironmentFrame(graphics, pens, units);
         break;
       
       case INCLINOMETER:
@@ -158,14 +159,22 @@ int main() {
   while(true) {
     // TODO Process Inputs
     if(buttonA.read()) {
+      if(state == ENVIRONMENT) {
+        units = units == CELSIUS ? FAHRENHEIT : CELSIUS;
+      }
       state = ENVIRONMENT;
     }
+    
     if(buttonB.read()) {
       state = INCLINOMETER;
     }
     
     if(buttonX.read()) {
       statsEnabled = true;
+    }
+     
+    if(buttonY.read()) {
+      statsEnabled = false;
     }
 
     // Swap away from splash screen after 100 frames

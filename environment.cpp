@@ -9,7 +9,6 @@ const float MIN_GAS = 100000.0;
 const float MAX_GAS = 0.0;
 const int ALTITUDE = 0;
 
-int units = CELSIUS;
 std::vector<Point> waterDrop;
 
 void initEnvironment() {
@@ -28,7 +27,7 @@ float adjustToSeaPressure(float pressureHpa, float temperature, float altitude) 
   return pressureHpa + ((pressureHpa * 9.80665 * altitude) / (287 * (273 + temperature + (altitude / 400))));
 }
 
-void renderEnvironmentFrame(PicoGraphics& graphics, Pens& pens) {
+void renderEnvironmentFrame(PicoGraphics& graphics, Pens& pens, UNIT units) {
   const int TEMPERATURE_OFFSET = 9;
 
   bme68x_data data;
