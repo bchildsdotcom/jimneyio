@@ -8,8 +8,12 @@
 #include "jimney.hpp"
 #include "inclinometer.hpp"
 #include "environment.hpp"
+#include "state.hpp"
 
+#include "pico.h"
+#include "pico/flash.h"
 #include "pico/multicore.h"
+
 #include "drivers/button/button.hpp"
 #include "drivers/st7789/st7789.hpp"
 #include "rgbled.hpp"
@@ -27,6 +31,17 @@ uint32_t getFreeHeap(void) {
 ST7789 st7789(WIDTH, HEIGHT, ROTATE_90, false, get_spi_pins(BG_SPI_FRONT));
 PicoGraphics_PenRGB332 graphicsA(st7789.width, st7789.height, nullptr);
 PicoGraphics_PenRGB332 graphicsB(st7789.width, st7789.height, nullptr);
+Pens graphicsAPens;
+Pens graphicsBPens;
+
+enum GRAPHICS {
+  GRAPHICS_NONE = 0,
+  GRAPHICS_A = 1,
+  GRAPHICS_B = 2,
+};
+
+GRAPHICS lastGraphics = GRAPHICS_NONE;
+GRAPHICS currentGraphics = GRAPHICS_NONE;
 
 RGBLED led(6, 7, 8);
 
@@ -35,32 +50,36 @@ Button buttonB(B);
 Button buttonX(X);
 Button buttonY(Y);
 
-enum GRAPHICS {
-  GRAPHICS_A = 1,
-  GRAPHICS_B = 2
-};
-
 int loopTime = 0;
 int frameTime = 0;
 int renderTime = 0;
 
+MODE mode = SPLASH;
+UNIT units = CELSIUS;
+bool statsEnabled = false;
+
 void core1_entry() {
-  st7789.set_backlight(255);
+  flash_safe_execute_core_init();
   while (true) {
-    uint32_t g = multicore_fifo_pop_blocking();
+    GRAPHICS currentGraphicsSnapshot = currentGraphics;
+    // update screen if the buffer was swapped
+    if(currentGraphicsSnapshot != GRAPHICS_NONE && lastGraphics != currentGraphicsSnapshot) {
+      auto updateStart = get_absolute_time();
+      st7789.update(currentGraphicsSnapshot == GRAPHICS_A ? &graphicsA : &graphicsB);
+      auto updateEnd = get_absolute_time();
+      frameTime = absolute_time_diff_us(updateStart, updateEnd);
+      
+      // Turn on the screen after the first frame is rendered
+      if(lastGraphics == GRAPHICS_NONE) {
+        st7789.set_backlight(255);
+      }
 
-    auto updateStart = get_absolute_time();
-    // update screen
-    st7789.update(g == GRAPHICS_A ? &graphicsA : &graphicsB);
-    auto updateEnd = get_absolute_time();
-    frameTime = absolute_time_diff_us(updateStart, updateEnd);
-
-    multicore_fifo_push_blocking(g);
+      lastGraphics = currentGraphicsSnapshot;
+    } else {
+      sleep_us(10);
+    }
   }
 }
-
-Pens graphicsAPens;
-Pens graphicsBPens;
 
 Pens initGraphics(PicoGraphics& graphics) {
   Pens pens;
@@ -105,16 +124,16 @@ void renderStats(PicoGraphics& graphics, Pens& pens) {
   snprintf(stringBuffer, sizeof(stringBuffer), "REN %dus, FMEM %ldk", (int)renderTime, getFreeHeap()/1024);
   text_location.y = 24;
   graphics.text(stringBuffer, text_location, WIDTH, 2);
-}
 
-STATE state = SPLASH;
-UNIT units = CELSIUS;
-bool statsEnabled = false;
+  snprintf(stringBuffer, sizeof(stringBuffer), "SC %dus, FUB 0x%04X, LE: %d", (int)scanTime, firstUnusedByte, lastError);
+  text_location.y = 48;
+  graphics.text(stringBuffer, text_location, WIDTH, 1);
+}
 
 void renderFrame(PicoGraphics& graphics, Pens& pens) {
     auto render_start = get_absolute_time();
 
-    switch(state) {
+    switch(mode) {
       case SPLASH:
         renderSplashFrame(graphics, pens);
         break;
@@ -137,8 +156,36 @@ void renderFrame(PicoGraphics& graphics, Pens& pens) {
     renderTime = absolute_time_diff_us(render_start, render_end);
 }
 
+void processInput()
+{
+  if (buttonA.read())
+  {
+    if (mode == ENVIRONMENT)
+    {
+      units = units == CELSIUS ? FAHRENHEIT : CELSIUS;
+    }
+    mode = ENVIRONMENT;
+  }
+
+  if (buttonB.read())
+  {
+    mode = INCLINOMETER;
+  }
+
+  if (buttonX.read())
+  {
+    statsEnabled = true;
+  }
+
+  if (buttonY.read())
+  {
+    statsEnabled = false;
+  }
+}
+
 int main() {
   stdio_init_all();
+  st7789.set_backlight(0);
   printf("Initializing Jimney I/O");
   multicore_launch_core1(core1_entry);
   led.set_rgb(0,0,0);
@@ -148,63 +195,47 @@ int main() {
 
   // Render Splash Screen Immediately
   renderFrame(graphicsA, graphicsAPens);
-  multicore_fifo_push_blocking(GRAPHICS_A);
+  currentGraphics = GRAPHICS_A;
   
   // Init Sensors
   initEnvironment();
-
-  auto currentGraphics = GRAPHICS_B;
-  uint32_t currentFrame = 0;
+  State savedState = loadState();
+  
+  mode = savedState.getMode();
+  units = savedState.getUnits();
+  
+  // Show the pretty splash screen for a bit
+  sleep_ms(1000);
 
   while(true) {
-    // TODO Process Inputs
-    if(buttonA.read()) {
-      if(state == ENVIRONMENT) {
-        units = units == CELSIUS ? FAHRENHEIT : CELSIUS;
-      }
-      state = ENVIRONMENT;
-    }
-    
-    if(buttonB.read()) {
-      state = INCLINOMETER;
-    }
-    
-    if(buttonX.read()) {
-      statsEnabled = true;
-    }
-     
-    if(buttonY.read()) {
-      statsEnabled = false;
-    }
-
-    // Swap away from splash screen after 100 frames
-    if(state == SPLASH && currentFrame > 100)
-      state = ENVIRONMENT;
+    processInput();
 
     // Render Frame on current framebuffer
     auto time_start = get_absolute_time();
     switch(currentGraphics) {
-      case GRAPHICS_A:
+      case GRAPHICS_B:
         renderFrame(graphicsA, graphicsAPens);
         break;
-      case GRAPHICS_B:
+      case GRAPHICS_A:
         renderFrame(graphicsB, graphicsBPens);
         break;
     }
+    
+    // Wait for current frame to finish rendering
+    while(lastGraphics != currentGraphics) {
+      sleep_us(10);
+    }
 
-    // Wait for the previous frame to finish
-    multicore_fifo_pop_blocking();
+    // Save state to persistent flash if required
+    saveStateIfNeeded(State(mode, units));
 
-    // Send the next frame
-    multicore_fifo_push_blocking(currentGraphics);
-
-    // Swap Current Graphics
+    // Signal to render the next frame
     currentGraphics = currentGraphics == GRAPHICS_A ? GRAPHICS_B : GRAPHICS_A;
 
     auto time_end = get_absolute_time();
     loopTime = absolute_time_diff_us(time_start, time_end);
-    currentFrame++;
   }
 
   return 0;
 }
+

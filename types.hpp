@@ -42,7 +42,7 @@ struct Line {
   Line(Point p1, Point p2) : p1(p1), p2(p2) {}
 };
 
-enum STATE {
+enum MODE {
   SPLASH = 0,
   ENVIRONMENT = 1,
   INCLINOMETER = 2,

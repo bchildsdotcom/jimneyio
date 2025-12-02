@@ -38,7 +38,8 @@ target_link_libraries(${NAME}
     pico_stdlib 
     hardware_spi 
     hardware_pwm 
-    hardware_dma 
+    hardware_dma
+    hardware_flash 
     rgbled 
     pico_graphics 
     st7789 
